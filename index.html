@@ -16,8 +16,12 @@
       --selected: #172033;
       --selected-text: #fff;
       --shadow: 0 12px 34px rgba(31,46,87,.08);
+      --ok: #177245;
+      --error: #b42318;
     }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -25,30 +29,35 @@
       color: var(--text);
       background: var(--bg);
     }
+
     main {
       width: min(780px, calc(100% - 28px));
       margin: 0 auto;
       padding: 28px 0 56px;
     }
+
     h1 {
       margin: 0 0 18px;
       font-size: clamp(2rem, 7vw, 3.5rem);
       letter-spacing: -.04em;
       line-height: 1;
     }
+
     .scoreboard, .task-card {
       border: 1px solid var(--border);
       border-radius: 20px;
       background: var(--card);
       box-shadow: var(--shadow);
     }
+
     .scoreboard {
       position: sticky;
       top: 12px;
       z-index: 10;
-      margin-bottom: 22px;
+      margin-bottom: 12px;
       padding: 18px 20px;
     }
+
     .score-row {
       display: flex;
       justify-content: space-between;
@@ -56,42 +65,82 @@
       gap: 20px;
       padding: 7px 0;
     }
-    .score-row + .score-row { border-top: 1px solid var(--border); }
-    .person { font-size: 1.15rem; font-weight: 800; }
-    .points { font-size: 1.65rem; font-weight: 900; }
+
+    .score-row + .score-row {
+      border-top: 1px solid var(--border);
+    }
+
+    .person {
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    .points {
+      font-size: 1.65rem;
+      font-weight: 900;
+    }
+
+    .sync {
+      min-height: 1.35em;
+      margin: 0 3px 15px;
+      color: var(--muted);
+      font-size: .86rem;
+    }
+
+    .sync.ok { color: var(--ok); }
+    .sync.error { color: var(--error); }
+
     .toolbar {
       display: flex;
       justify-content: flex-end;
       margin-bottom: 14px;
     }
+
     button {
       font: inherit;
       cursor: pointer;
     }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .55;
+    }
+
     .reset-all, .clear-one {
       border: 1px solid var(--border);
       color: var(--muted);
       background: transparent;
       font-weight: 700;
     }
+
     .reset-all {
       min-height: 42px;
       padding: 0 14px;
       border-radius: 12px;
     }
-    .task-list { display: grid; gap: 13px; }
-    .task-card { padding: 17px; }
+
+    .task-list {
+      display: grid;
+      gap: 13px;
+    }
+
+    .task-card {
+      padding: 17px;
+    }
+
     .task-top {
       display: flex;
       justify-content: space-between;
       gap: 18px;
       align-items: flex-start;
     }
+
     .task-name {
       margin: 0;
       font-size: 1.05rem;
       font-weight: 800;
     }
+
     .task-points {
       flex: 0 0 auto;
       padding: 5px 9px;
@@ -100,32 +149,45 @@
       background: var(--accent-soft);
       font-weight: 850;
     }
+
     .choices {
       display: grid;
       grid-template-columns: 1fr 1fr auto;
       gap: 9px;
       margin-top: 15px;
     }
+
     .choice, .clear-one {
       min-height: 46px;
       border-radius: 12px;
       font-weight: 850;
     }
+
     .choice {
       border: 1px solid var(--border);
       color: var(--text);
       background: transparent;
       font-size: 1.05rem;
     }
+
     .choice.selected {
       border-color: var(--selected);
       color: var(--selected-text);
       background: var(--selected);
     }
-    .clear-one { padding: 0 13px; }
+
+    .clear-one {
+      padding: 0 13px;
+    }
+
     @media (max-width: 520px) {
-      .choices { grid-template-columns: 1fr 1fr; }
-      .clear-one { grid-column: 1 / -1; }
+      .choices {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .clear-one {
+        grid-column: 1 / -1;
+      }
     }
   </style>
 </head>
@@ -144,6 +206,8 @@
       </div>
     </section>
 
+    <div id="syncStatus" class="sync">Yhdistetään…</div>
+
     <div class="toolbar">
       <button class="reset-all" id="resetAll" type="button">Tyhjennä kaikki</button>
     </div>
@@ -151,8 +215,25 @@
     <section class="task-list" id="taskList"></section>
   </main>
 
-  <script>
-    // Muokkaa kotityöt ja pisteet tähän.
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      onSnapshot,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCqeww4HeFZioI04UA9ShZBKYp47r5Kp4U",
+      authDomain: "croisantinrepija-c0878.firebaseapp.com",
+      projectId: "croisantinrepija-c0878",
+      storageBucket: "croisantinrepija-c0878.firebasestorage.app",
+      messagingSenderId: "997353427368",
+      appId: "1:997353427368:web:087003202c24df08be4d9d",
+      measurementId: "G-RPZPPBGS7N"
+    };
+
     const chores = [
       { id: "ylakerta-lattiat", name: "Yläkerran imurointi ja lattioiden tyhjennys", points: 4 },
       { id: "alakerta-lattiat", name: "Alakerran imurointi ja lattioiden tyhjennys", points: 4 },
@@ -164,35 +245,62 @@
       { id: "kierratykset", name: "Kierrätysten vienti", points: 2 }
     ];
 
-    const STORAGE_KEY = "siivouspisteet-state-v1";
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Yksi yhteinen dokumentti. Ei historiaa.
+    const stateRef = doc(db, "cleaning", "current");
+
     const taskList = document.querySelector("#taskList");
     const scoreK = document.querySelector("#scoreK");
     const scoreI = document.querySelector("#scoreI");
+    const syncStatus = document.querySelector("#syncStatus");
+    const resetAll = document.querySelector("#resetAll");
 
-    function loadState() {
+    let state = {};
+    let ready = false;
+    let saving = false;
+
+    function setStatus(text, type = "") {
+      syncStatus.textContent = text;
+      syncStatus.className = `sync ${type}`.trim();
+    }
+
+    async function saveState(nextState) {
+      if (!ready || saving) return;
+
+      saving = true;
+      state = nextState;
+      render();
+      setStatus("Tallennetaan…");
+
       try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        return saved && typeof saved === "object" ? saved : {};
-      } catch {
-        return {};
+        await setDoc(stateRef, { choices: state });
+        setStatus("Synkronoitu", "ok");
+      } catch (error) {
+        console.error(error);
+        setStatus("Tallennus epäonnistui. Tarkista Firestore Rules.", "error");
+      } finally {
+        saving = false;
+        render();
       }
     }
 
-    let state = loadState();
-
-    function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
-
     function setChoice(id, person) {
-      if (person === null) delete state[id];
-      else state[id] = person;
-      saveState();
-      render();
+      const nextState = { ...state };
+
+      if (person === null) {
+        delete nextState[id];
+      } else {
+        nextState[id] = person;
+      }
+
+      saveState(nextState);
     }
 
     function render() {
       taskList.replaceChildren();
+
       let totalK = 0;
       let totalI = 0;
 
@@ -224,6 +332,7 @@
           button.type = "button";
           button.className = "choice";
           button.textContent = person;
+          button.disabled = !ready || saving;
 
           if (state[chore.id] === person) {
             button.classList.add("selected");
@@ -237,6 +346,7 @@
         clear.type = "button";
         clear.className = "clear-one";
         clear.textContent = "Tyhjennä";
+        clear.disabled = !ready || saving || !state[chore.id];
         clear.addEventListener("click", () => setChoice(chore.id, null));
         choices.append(clear);
 
@@ -246,15 +356,46 @@
 
       scoreK.textContent = totalK;
       scoreI.textContent = totalI;
+      resetAll.disabled = !ready || saving || Object.keys(state).length === 0;
     }
 
-    document.querySelector("#resetAll").addEventListener("click", () => {
-      state = {};
-      saveState();
-      render();
+    resetAll.addEventListener("click", () => {
+      saveState({});
     });
 
     render();
+
+    // Reaaliaikainen kuuntelu: kun toinen puhelin tekee muutoksen,
+    // tämä sivu päivittyy automaattisesti.
+    onSnapshot(
+      stateRef,
+      async snapshot => {
+        if (!snapshot.exists()) {
+          try {
+            await setDoc(stateRef, { choices: {} });
+          } catch (error) {
+            console.error(error);
+            setStatus("Tietokantaa ei voitu alustaa. Tarkista Firestore Rules.", "error");
+            return;
+          }
+        } else {
+          const data = snapshot.data();
+          state = data.choices && typeof data.choices === "object"
+            ? data.choices
+            : {};
+        }
+
+        ready = true;
+        render();
+        setStatus("Synkronoitu", "ok");
+      },
+      error => {
+        console.error(error);
+        ready = false;
+        render();
+        setStatus("Yhteys Firestoreen epäonnistui. Tarkista Firestore Rules.", "error");
+      }
+    );
   </script>
 </body>
 </html>
