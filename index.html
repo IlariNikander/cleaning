@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Siivouspisteet</title>
+  <style>
+    :root {
+      --bg: #f4f6fa;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --border: #dfe5ee;
+      --accent: #3157d5;
+      --accent-soft: rgba(49,87,213,.12);
+      --selected: #172033;
+      --selected-text: #fff;
+      --shadow: 0 12px 34px rgba(31,46,87,.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+    main {
+      width: min(780px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+    h1 {
+      margin: 0 0 18px;
+      font-size: clamp(2rem, 7vw, 3.5rem);
+      letter-spacing: -.04em;
+      line-height: 1;
+    }
+    .scoreboard, .task-card {
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+    .scoreboard {
+      position: sticky;
+      top: 12px;
+      z-index: 10;
+      margin-bottom: 22px;
+      padding: 18px 20px;
+    }
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 20px;
+      padding: 7px 0;
+    }
+    .score-row + .score-row { border-top: 1px solid var(--border); }
+    .person { font-size: 1.15rem; font-weight: 800; }
+    .points { font-size: 1.65rem; font-weight: 900; }
+    .toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 14px;
+    }
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+    .reset-all, .clear-one {
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: transparent;
+      font-weight: 700;
+    }
+    .reset-all {
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 12px;
+    }
+    .task-list { display: grid; gap: 13px; }
+    .task-card { padding: 17px; }
+    .task-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+    }
+    .task-name {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+    .task-points {
+      flex: 0 0 auto;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 850;
+    }
+    .choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 9px;
+      margin-top: 15px;
+    }
+    .choice, .clear-one {
+      min-height: 46px;
+      border-radius: 12px;
+      font-weight: 850;
+    }
+    .choice {
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: transparent;
+      font-size: 1.05rem;
+    }
+    .choice.selected {
+      border-color: var(--selected);
+      color: var(--selected-text);
+      background: var(--selected);
+    }
+    .clear-one { padding: 0 13px; }
+    @media (max-width: 520px) {
+      .choices { grid-template-columns: 1fr 1fr; }
+      .clear-one { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Siivouspisteet</h1>
+
+    <section class="scoreboard">
+      <div class="score-row">
+        <span class="person">K</span>
+        <span class="points" id="scoreK">0</span>
+      </div>
+      <div class="score-row">
+        <span class="person">I</span>
+        <span class="points" id="scoreI">0</span>
+      </div>
+    </section>
+
+    <div class="toolbar">
+      <button class="reset-all" id="resetAll" type="button">Tyhjennä kaikki</button>
+    </div>
+
+    <section class="task-list" id="taskList"></section>
+  </main>
+
+  <script>
+    // Muokkaa kotityöt ja pisteet tähän.
+    const chores = [
+      { id: "imurointi", name: "Imurointi", points: 3 },
+      { id: "lattiat", name: "Lattioiden pesu", points: 4 },
+      { id: "keittio", name: "Keittiön siivous", points: 3 },
+      { id: "kylpyhuone", name: "Kylpyhuoneen siivous", points: 4 },
+      { id: "pyykit", name: "Pyykkien hoito", points: 2 },
+      { id: "astianpesukone", name: "Astianpesukone", points: 1 }
+    ];
+
+    const STORAGE_KEY = "siivouspisteet-state-v1";
+    const taskList = document.querySelector("#taskList");
+    const scoreK = document.querySelector("#scoreK");
+    const scoreI = document.querySelector("#scoreI");
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        return saved && typeof saved === "object" ? saved : {};
+      } catch {
+        return {};
+      }
+    }
+
+    let state = loadState();
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function setChoice(id, person) {
+      if (person === null) delete state[id];
+      else state[id] = person;
+      saveState();
+      render();
+    }
+
+    function render() {
+      taskList.replaceChildren();
+      let totalK = 0;
+      let totalI = 0;
+
+      chores.forEach(chore => {
+        if (state[chore.id] === "K") totalK += chore.points;
+        if (state[chore.id] === "I") totalI += chore.points;
+
+        const card = document.createElement("article");
+        card.className = "task-card";
+
+        const top = document.createElement("div");
+        top.className = "task-top";
+
+        const name = document.createElement("h2");
+        name.className = "task-name";
+        name.textContent = chore.name;
+
+        const points = document.createElement("span");
+        points.className = "task-points";
+        points.textContent = `${chore.points} p`;
+
+        top.append(name, points);
+
+        const choices = document.createElement("div");
+        choices.className = "choices";
+
+        ["K", "I"].forEach(person => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "choice";
+          button.textContent = person;
+
+          if (state[chore.id] === person) {
+            button.classList.add("selected");
+          }
+
+          button.addEventListener("click", () => setChoice(chore.id, person));
+          choices.append(button);
+        });
+
+        const clear = document.createElement("button");
+        clear.type = "button";
+        clear.className = "clear-one";
+        clear.textContent = "Tyhjennä";
+        clear.addEventListener("click", () => setChoice(chore.id, null));
+        choices.append(clear);
+
+        card.append(top, choices);
+        taskList.append(card);
+      });
+
+      scoreK.textContent = totalK;
+      scoreI.textContent = totalI;
+    }
+
+    document.querySelector("#resetAll").addEventListener("click", () => {
+      state = {};
+      saveState();
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
