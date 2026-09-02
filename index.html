@@ -154,12 +154,14 @@
   <script>
     // Muokkaa kotityöt ja pisteet tähän.
     const chores = [
-      { id: "imurointi", name: "Imurointi", points: 3 },
-      { id: "lattiat", name: "Lattioiden pesu", points: 4 },
-      { id: "keittio", name: "Keittiön siivous", points: 3 },
-      { id: "kylpyhuone", name: "Kylpyhuoneen siivous", points: 4 },
-      { id: "pyykit", name: "Pyykkien hoito", points: 2 },
-      { id: "astianpesukone", name: "Astianpesukone", points: 1 }
+      { id: "ylakerta-lattiat", name: "Yläkerran imurointi ja lattioiden tyhjennys", points: 4 },
+      { id: "alakerta-lattiat", name: "Alakerran imurointi ja lattioiden tyhjennys", points: 4 },
+      { id: "ylakerran-vessa", name: "Yläkerran vessan pesu", points: 2 },
+      { id: "alakerran-vessa", name: "Alakerran vessan pesu", points: 2 },
+      { id: "tiskikone", name: "Tiskikoneen täyttö ja tyhjennys", points: 1 },
+      { id: "pyykinpesukone", name: "Pyykinpesukoneen täyttö ja tyhjennys", points: 1 },
+      { id: "kylpyhuone", name: "Kylpyhuoneen pesu", points: 8 },
+      { id: "kierratykset", name: "Kierrätysten vienti", points: 2 }
     ];
 
     const STORAGE_KEY = "siivouspisteet-state-v1";
