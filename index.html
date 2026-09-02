@@ -13,8 +13,6 @@
       --border: #dfe5ee;
       --accent: #3157d5;
       --accent-soft: rgba(49,87,213,.12);
-      --selected: #172033;
-      --selected-text: #fff;
       --shadow: 0 12px 34px rgba(31,46,87,.08);
       --ok: #177245;
       --error: #b42318;
@@ -43,7 +41,8 @@
       line-height: 1;
     }
 
-    .scoreboard, .task-card {
+    .scoreboard,
+    .task-card {
       border: 1px solid var(--border);
       border-radius: 20px;
       background: var(--card);
@@ -60,8 +59,8 @@
 
     .score-row {
       display: flex;
-      justify-content: space-between;
       align-items: baseline;
+      justify-content: space-between;
       gap: 20px;
       padding: 7px 0;
     }
@@ -81,43 +80,14 @@
     }
 
     .sync {
-      min-height: 1.35em;
+      min-height: 1.3em;
       margin: 0 3px 15px;
       color: var(--muted);
-      font-size: .86rem;
+      font-size: .84rem;
     }
 
     .sync.ok { color: var(--ok); }
     .sync.error { color: var(--error); }
-
-    .toolbar {
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 14px;
-    }
-
-    button {
-      font: inherit;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      cursor: not-allowed;
-      opacity: .55;
-    }
-
-    .reset-all, .clear-one {
-      border: 1px solid var(--border);
-      color: var(--muted);
-      background: transparent;
-      font-weight: 700;
-    }
-
-    .reset-all {
-      min-height: 42px;
-      padding: 0 14px;
-      border-radius: 12px;
-    }
 
     .task-list {
       display: grid;
@@ -130,14 +100,16 @@
 
     .task-top {
       display: flex;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 18px;
-      align-items: flex-start;
+      margin-bottom: 15px;
     }
 
     .task-name {
       margin: 0;
       font-size: 1.05rem;
+      line-height: 1.35;
       font-weight: 800;
     }
 
@@ -148,45 +120,99 @@
       color: var(--accent);
       background: var(--accent-soft);
       font-weight: 850;
+      white-space: nowrap;
     }
 
-    .choices {
+    .counter-row {
       display: grid;
-      grid-template-columns: 1fr 1fr auto;
-      gap: 9px;
-      margin-top: 15px;
+      grid-template-columns: 34px 44px 60px 44px 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 0;
     }
 
-    .choice, .clear-one {
-      min-height: 46px;
-      border-radius: 12px;
-      font-weight: 850;
+    .counter-row + .counter-row {
+      border-top: 1px solid var(--border);
     }
 
-    .choice {
+    .counter-person {
+      font-weight: 900;
+      font-size: 1.08rem;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .45;
+    }
+
+    .counter-btn {
+      width: 44px;
+      height: 44px;
       border: 1px solid var(--border);
+      border-radius: 12px;
       color: var(--text);
       background: transparent;
-      font-size: 1.05rem;
+      font-size: 1.35rem;
+      font-weight: 800;
     }
 
-    .choice.selected {
-      border-color: var(--selected);
-      color: var(--selected-text);
-      background: var(--selected);
+    .counter-btn:hover:not(:disabled) {
+      border-color: var(--accent);
     }
 
-    .clear-one {
-      padding: 0 13px;
+    .count {
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 900;
+    }
+
+    .subtotal {
+      text-align: right;
+      color: var(--muted);
+      font-size: .92rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .bottom-toolbar {
+      display: flex;
+      justify-content: center;
+      margin-top: 26px;
+    }
+
+    .reset-all {
+      min-height: 48px;
+      padding: 0 20px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      color: var(--muted);
+      background: var(--card);
+      font-weight: 800;
+    }
+
+    .reset-all:hover:not(:disabled) {
+      color: var(--text);
+      border-color: var(--text);
     }
 
     @media (max-width: 520px) {
-      .choices {
-        grid-template-columns: 1fr 1fr;
+      .counter-row {
+        grid-template-columns: 28px 42px 48px 42px 1fr;
+        gap: 6px;
       }
 
-      .clear-one {
-        grid-column: 1 / -1;
+      .counter-btn {
+        width: 42px;
+        height: 42px;
+      }
+
+      .subtotal {
+        font-size: .82rem;
       }
     }
   </style>
@@ -195,7 +221,7 @@
   <main>
     <h1>Siivouspisteet</h1>
 
-    <section class="scoreboard">
+    <section class="scoreboard" aria-label="Pistetilanne">
       <div class="score-row">
         <span class="person">K</span>
         <span class="points" id="scoreK">0</span>
@@ -208,11 +234,11 @@
 
     <div id="syncStatus" class="sync">Yhdistetään…</div>
 
-    <div class="toolbar">
+    <section class="task-list" id="taskList"></section>
+
+    <div class="bottom-toolbar">
       <button class="reset-all" id="resetAll" type="button">Tyhjennä kaikki</button>
     </div>
-
-    <section class="task-list" id="taskList"></section>
   </main>
 
   <script type="module">
@@ -221,7 +247,8 @@
       getFirestore,
       doc,
       onSnapshot,
-      setDoc
+      setDoc,
+      runTransaction
     } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -239,16 +266,17 @@
       { id: "alakerta-lattiat", name: "Alakerran imurointi ja lattioiden tyhjennys", points: 4 },
       { id: "ylakerran-vessa", name: "Yläkerran vessan pesu", points: 2 },
       { id: "alakerran-vessa", name: "Alakerran vessan pesu", points: 2 },
-      { id: "tiskikone", name: "Tiskikoneen täyttö ja tyhjennys", points: 1 },
-      { id: "pyykinpesukone", name: "Pyykinpesukoneen täyttö ja tyhjennys", points: 1 },
+      { id: "tiskikone-taytto", name: "Tiskikoneen täyttö", points: 1 },
+      { id: "tiskikone-tyhjennys", name: "Tiskikoneen tyhjennys", points: 1 },
+      { id: "pyykinpesukone-taytto", name: "Pyykinpesukoneen täyttö", points: 1 },
+      { id: "pyykinpesukone-tyhjennys", name: "Pyykinpesukoneen tyhjennys", points: 1 },
+      { id: "pyykkien-viikkaus", name: "Pyykkien viikkaus", points: 1 },
       { id: "kylpyhuone", name: "Kylpyhuoneen pesu", points: 8 },
       { id: "kierratykset", name: "Kierrätysten vienti", points: 2 }
     ];
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
-    // Yksi yhteinen dokumentti. Ei historiaa.
     const stateRef = doc(db, "cleaning", "current");
 
     const taskList = document.querySelector("#taskList");
@@ -257,45 +285,62 @@
     const syncStatus = document.querySelector("#syncStatus");
     const resetAll = document.querySelector("#resetAll");
 
-    let state = {};
+    let counts = {};
     let ready = false;
-    let saving = false;
 
     function setStatus(text, type = "") {
       syncStatus.textContent = text;
       syncStatus.className = `sync ${type}`.trim();
     }
 
-    async function saveState(nextState) {
-      if (!ready || saving) return;
+    function getCount(taskId, person) {
+      const task = counts[taskId];
+      if (!task || typeof task !== "object") return 0;
 
-      saving = true;
-      state = nextState;
-      render();
+      const value = Number(task[person]);
+      return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+    }
+
+    async function changeCount(taskId, person, delta) {
+      if (!ready) return;
+
       setStatus("Tallennetaan…");
 
       try {
-        await setDoc(stateRef, { choices: state });
+        await runTransaction(db, async transaction => {
+          const snapshot = await transaction.get(stateRef);
+          const data = snapshot.exists() ? snapshot.data() : {};
+          const currentCounts =
+            data.counts && typeof data.counts === "object"
+              ? structuredClone(data.counts)
+              : {};
+
+          const taskCounts =
+            currentCounts[taskId] && typeof currentCounts[taskId] === "object"
+              ? { ...currentCounts[taskId] }
+              : { K: 0, I: 0 };
+
+          const current = Number(taskCounts[person]) || 0;
+          taskCounts[person] = Math.max(0, current + delta);
+
+          if ((Number(taskCounts.K) || 0) === 0 && (Number(taskCounts.I) || 0) === 0) {
+            delete currentCounts[taskId];
+          } else {
+            currentCounts[taskId] = taskCounts;
+          }
+
+          transaction.set(
+            stateRef,
+            { counts: currentCounts },
+            { merge: true }
+          );
+        });
+
         setStatus("Synkronoitu", "ok");
       } catch (error) {
         console.error(error);
-        setStatus("Tallennus epäonnistui. Tarkista Firestore Rules.", "error");
-      } finally {
-        saving = false;
-        render();
+        setStatus("Tallennus epäonnistui.", "error");
       }
-    }
-
-    function setChoice(id, person) {
-      const nextState = { ...state };
-
-      if (person === null) {
-        delete nextState[id];
-      } else {
-        nextState[id] = person;
-      }
-
-      saveState(nextState);
     }
 
     function render() {
@@ -305,8 +350,11 @@
       let totalI = 0;
 
       chores.forEach(chore => {
-        if (state[chore.id] === "K") totalK += chore.points;
-        if (state[chore.id] === "I") totalI += chore.points;
+        const kCount = getCount(chore.id, "K");
+        const iCount = getCount(chore.id, "I");
+
+        totalK += kCount * chore.points;
+        totalI += iCount * chore.points;
 
         const card = document.createElement("article");
         card.className = "task-card";
@@ -320,69 +368,96 @@
 
         const points = document.createElement("span");
         points.className = "task-points";
-        points.textContent = `${chore.points} p`;
+        points.textContent = `${chore.points} p / kerta`;
 
         top.append(name, points);
-
-        const choices = document.createElement("div");
-        choices.className = "choices";
+        card.append(top);
 
         ["K", "I"].forEach(person => {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "choice";
-          button.textContent = person;
-          button.disabled = !ready || saving;
+          const count = person === "K" ? kCount : iCount;
 
-          if (state[chore.id] === person) {
-            button.classList.add("selected");
-          }
+          const row = document.createElement("div");
+          row.className = "counter-row";
 
-          button.addEventListener("click", () => setChoice(chore.id, person));
-          choices.append(button);
+          const label = document.createElement("span");
+          label.className = "counter-person";
+          label.textContent = person;
+
+          const minus = document.createElement("button");
+          minus.type = "button";
+          minus.className = "counter-btn";
+          minus.textContent = "−";
+          minus.disabled = !ready || count === 0;
+          minus.setAttribute("aria-label", `${person}: vähennä yksi`);
+          minus.addEventListener("click", () => changeCount(chore.id, person, -1));
+
+          const countEl = document.createElement("span");
+          countEl.className = "count";
+          countEl.textContent = count;
+
+          const plus = document.createElement("button");
+          plus.type = "button";
+          plus.className = "counter-btn";
+          plus.textContent = "+";
+          plus.disabled = !ready;
+          plus.setAttribute("aria-label", `${person}: lisää yksi`);
+          plus.addEventListener("click", () => changeCount(chore.id, person, 1));
+
+          const subtotal = document.createElement("span");
+          subtotal.className = "subtotal";
+          subtotal.textContent = `${count * chore.points} p`;
+
+          row.append(label, minus, countEl, plus, subtotal);
+          card.append(row);
         });
 
-        const clear = document.createElement("button");
-        clear.type = "button";
-        clear.className = "clear-one";
-        clear.textContent = "Tyhjennä";
-        clear.disabled = !ready || saving || !state[chore.id];
-        clear.addEventListener("click", () => setChoice(chore.id, null));
-        choices.append(clear);
-
-        card.append(top, choices);
         taskList.append(card);
       });
 
       scoreK.textContent = totalK;
       scoreI.textContent = totalI;
-      resetAll.disabled = !ready || saving || Object.keys(state).length === 0;
+      resetAll.disabled = !ready || Object.keys(counts).length === 0;
     }
 
-    resetAll.addEventListener("click", () => {
-      saveState({});
+    resetAll.addEventListener("click", async () => {
+      if (!window.confirm("Haluatko varmasti tyhjentää kaikki?")) return;
+
+      setStatus("Tyhjennetään…");
+
+      try {
+        await setDoc(
+          stateRef,
+          { counts: {} },
+          { merge: true }
+        );
+        setStatus("Synkronoitu", "ok");
+      } catch (error) {
+        console.error(error);
+        setStatus("Tyhjennys epäonnistui.", "error");
+      }
     });
 
     render();
 
-    // Reaaliaikainen kuuntelu: kun toinen puhelin tekee muutoksen,
-    // tämä sivu päivittyy automaattisesti.
     onSnapshot(
       stateRef,
       async snapshot => {
         if (!snapshot.exists()) {
           try {
-            await setDoc(stateRef, { choices: {} });
+            await setDoc(stateRef, { counts: {} });
           } catch (error) {
             console.error(error);
-            setStatus("Tietokantaa ei voitu alustaa. Tarkista Firestore Rules.", "error");
+            ready = false;
+            render();
+            setStatus("Tietokantaa ei voitu alustaa.", "error");
             return;
           }
         } else {
           const data = snapshot.data();
-          state = data.choices && typeof data.choices === "object"
-            ? data.choices
-            : {};
+          counts =
+            data.counts && typeof data.counts === "object"
+              ? data.counts
+              : {};
         }
 
         ready = true;
@@ -393,7 +468,7 @@
         console.error(error);
         ready = false;
         render();
-        setStatus("Yhteys Firestoreen epäonnistui. Tarkista Firestore Rules.", "error");
+        setStatus("Yhteys Firestoreen epäonnistui.", "error");
       }
     );
   </script>
