@@ -330,10 +330,12 @@
             currentCounts[taskId] = taskCounts;
           }
 
+          // Korvaa counts-kenttä kokonaan: merge:true säilyttäisi
+          // poistettujen laskurien vanhat arvot Firestoressa.
           transaction.set(
             stateRef,
             { counts: currentCounts },
-            { merge: true }
+            { mergeFields: ["counts"] }
           );
         });
 
@@ -429,7 +431,7 @@
         await setDoc(
           stateRef,
           { counts: {} },
-          { merge: true }
+          { mergeFields: ["counts"] }
         );
         setStatus("Synkronoitu", "ok");
       } catch (error) {
